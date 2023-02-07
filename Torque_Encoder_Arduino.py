@@ -26,8 +26,8 @@ CB_TIME = 3
 DATA_PIN_Elbow = 2  
 STATE_PIN_Elbow = 3
 
-DATA_PIN_ShFE = 18  
-STATE_PIN_ShFE = 19
+DATA_PIN_ShFE = 19  
+STATE_PIN_ShFE = 18
 
 DATA_PIN_ShAA = 20 
 STATE_PIN_ShAA = 21
@@ -83,7 +83,7 @@ def compute_angle(pin_number,pin_value,joint):
                     count[joint] -= 1    
     s =""
     for x in count:
-        s+= str(x) + ': '+ str(count[x]*360/1024) + "..."
+        s+= str(x) + ': '+ str(count[x]*360/1024) + "   "
         
     s+="\n"
     print(s)
@@ -127,6 +127,8 @@ def the_callback_shaa(data):
 
 # def Elbow_read():
 board = telemetrix.Telemetrix(arduino_wait=2)
+
+
 # setting Encoder input PINs
 board.set_pin_mode_digital_input(DATA_PIN_Elbow, the_callback_elbow)
 board.set_pin_mode_digital_input(STATE_PIN_Elbow, the_callback_elbow)
@@ -143,39 +145,93 @@ board.set_pin_mode_digital_input(STATE_PIN_ShAA, the_callback_shaa)
 
 
 
-# Setting Torque output PINs
-board.set_pin_mode_digital_output(PRESSURE_PIN_ELBOW)
-board.set_pin_mode_digital_output(DRIVER_PIN1_ELBOW)
-board.set_pin_mode_analog_output(DRIVER_PIN2_ELBOW)
 
-board.set_pin_mode_digital_output(PRESSURE_PIN_SHFE)
-board.set_pin_mode_digital_output(DRIVER_PIN1_SHFE)
-board.set_pin_mode_analog_output(DRIVER_PIN2_SHFE)
-
-board.set_pin_mode_digital_output(PRESSURE_PIN_SHAA)
-board.set_pin_mode_digital_output(DRIVER_PIN1_SHAA)
-board.set_pin_mode_analog_output(DRIVER_PIN2_SHAA)
-
-
-# Setting PIN values
-board.digital_write(DRIVER_PIN1_ELBOW, 0)
-board.digital_write(DRIVER_PIN2_ELBOW, 1)
-
-board.digital_write(DRIVER_PIN1_SHFE, 0)
-board.digital_write(DRIVER_PIN2_SHFE, 1)
-
-board.digital_write(DRIVER_PIN1_SHAA, 0)
-board.digital_write(DRIVER_PIN2_SHAA, 1)
-
-
-
+def torque_control(joint,input):
+    if joint == 'Elbow':
+        # Setting Torque output PINs
+        board.set_pin_mode_digital_output(DRIVER_PIN1_ELBOW)
+        board.set_pin_mode_digital_output(DRIVER_PIN2_ELBOW)
+        # Setting PIN values
+        board.digital_write(DRIVER_PIN1_ELBOW, 0)
+        board.digital_write(DRIVER_PIN2_ELBOW, 1)
+        board.set_pin_mode_analog_output(PRESSURE_PIN_ELBOW)
+        board.analog_write(PRESSURE_PIN_ELBOW, input)
+    if joint == 'ShFE':
+        board.set_pin_mode_digital_output(DRIVER_PIN1_SHFE)
+        board.set_pin_mode_digital_output(DRIVER_PIN2_SHFE)
+        board.digital_write(DRIVER_PIN1_SHFE, 0)
+        board.digital_write(DRIVER_PIN2_SHFE, 1)
+        board.set_pin_mode_analog_output(PRESSURE_PIN_SHFE)
+        board.analog_write(PRESSURE_PIN_SHFE, input)        
+    if joint == 'ShAA':
+        board.set_pin_mode_digital_output(DRIVER_PIN1_SHAA)
+        board.set_pin_mode_digital_output(DRIVER_PIN2_SHAA)
+        board.digital_write(DRIVER_PIN1_SHAA, 0)
+        board.digital_write(DRIVER_PIN2_SHAA, 1)
+        board.set_pin_mode_analog_output(PRESSURE_PIN_SHAA)
+        board.analog_write(PRESSURE_PIN_SHAA, input)
+        
+        
 print('Enter Control-C to quit.')
 
+# back to rest position
 try:
     while True:
-        board.analog_write(PRESSURE_PIN_SHFE, 0)
-        time.sleep(.00001)
+        time.sleep(.001)
+        torque_control('ShFE',0)
+        torque_control('ShAA',0)
+        torque_control('Elbow',0)
 except KeyboardInterrupt:
     board.shutdown()
     sys.exit(0)
 
+
+
+##########################################     MAIN     #########################################################
+
+# The max output torque for elbow is 200 for shfe is 256 and for shaa is 230
+# # All joints moving together
+# try:
+#     while True:
+#         print('Going up...')
+#         for i in range(256):
+#             torque_control('Elbow',i)
+#             torque_control('ShFE',i)
+#             torque_control('ShAA',i)
+#             time.sleep(1)  # controlling the frequency
+#             print(i)
+#             print(int(count['Elbow']*360/1024))
+#             if int(count['Elbow']*360/1024) == 30:
+#                 for j in range(i, -1, -1):
+#                     torque_control('Elbow',i)
+#                     time.sleep(1)  # controlling the frequency                
+#             if int(count['ShFE']*360/1024) == 20:
+#                 for j in range(i, -1, -1):
+#                     torque_control('ShFE',i)
+#                     time.sleep(1)  # controlling the frequency 
+#             if int(count['ShAA']*360/1024) == 20:
+#                 for j in range(i, -1, -1):
+#                     torque_control('ShAA',i)
+#                     time.sleep(1)  # controlling the frequency  
+# except KeyboardInterrupt:
+#     board.shutdown()
+#     sys.exit(0)
+
+# All joints moving together
+# try:
+#     print('Going up...')
+#     for i in range(200):
+#         torque_control('ShFE',i)
+#         time.sleep(2)  # controlling the frequency
+#         torque_control('ShAA',i)
+#         torque_control('Elbow',i)
+#         print(i)
+#     for i in range(200,-1,-1):
+#         torque_control('ShFE',i)
+#         time.sleep(2)  # controlling the frequency
+#         torque_control('ShAA',i)
+#         torque_control('Elbow',i)
+#         print(i)
+# except KeyboardInterrupt:
+#     board.shutdown()
+#     sys.exit(0)
