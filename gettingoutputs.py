@@ -2,7 +2,6 @@ import torch
 from torch import nn
 import matplotlib.pyplot as plt
 import pandas as pd
-import MyData
 import numpy as np
 
 df = pd.read_csv('dataset/newdataset.csv')
@@ -29,6 +28,14 @@ class Network(nn.Module):
         return x
 
 
+def gravity_compensate(input):
+    model = Network(6, 3)
+    path = "trainedmodels/MLP1.pth"
+    model.load_state_dict(torch.load(path))
+    model.eval()
+    input = torch.tensor(input)
+    predicted_output = model(input)
+    return predicted_output
 
 def test(features,labels):
     # Load the model that we saved at the end of the training loop
